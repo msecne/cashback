@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <title>Cashback & vouchere</title>
+  <!-- Add viewport meta tag for responsiveness -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    /* Use Roboto font from Google Fonts */
+    @import url('https://fonts.googleapis.com/css?family=Roboto&display=swap');
+
+    body {
+      font-family: 'Roboto', sans-serif;
+      /* Use linear gradient for background color */
+      background: linear-gradient(to right, #74ebd5, #acb6e5);
+    }
+
+    form {
+      margin-bottom: 1em;
+    }
+
+    table {
+      border-collapse: collapse;
+      width: 95%;
+      margin: 1em auto;
+    }
+
+    th,
+    td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+
+    td.extra-info {
+      white-space: pre-line;
+      /* Preserve line breaks */
+    }
+
+    th {
+      background-color: #f2f2f2;
+    }
+
+    /* Use flexbox to align and center the elements */
+    .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    form,
+    table {
+      width: 80%;
+    }
+
+    form div {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    form label {
+      margin-right: 25px;
+    }
+
+    form input,
+    form select {
+      margin-bottom: 10px;
+    }
+
+    input[type=number],
+    input[type=range],
+    output,
+    button {
+      width: 100%;
+      padding: 10px;
+      border: none;
+      border-radius: 5px;
+    }
+
+    input[type=checkbox] {
+      width: auto;
+      transform: scale(1.5);
+      margin-right: 10px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    button {
+      background-color: orange;
+      color: white;
+      cursor: pointer;
+    }
+
+    input:hover,
+    button:hover {
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    input:focus,
+    button:focus {
+      outline: none;
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    /* Add a class for the button container */
+    .button-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 10px;
+    }
+
+    /* Add margin to the left button */
+    .button-container button {
+      margin-right: 10px;
+    }
+
+    #results {
+      width: 90%;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+
+<body>
+  <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+  <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.25/css/jquery.dataTables.css">
+  <script type="text/javascript" charset="utf8" src="https://code.jquery.com/jquery-3.5.1.js"></script>
+  <script type="text/javascript" charset="utf8"
+    src="https://cdn.datatables.net/1.10.25/js/jquery.dataTables.js"></script>
+  <div class="container">
+      <!-- Add the button container -->
+      <div class="button-container">
+        <button type="button" id="cashback">Cashback & Vouchere</button>
+        <button type="button" id="voucher">Vouchere</button>
+        <button type="button" id="extrabonus">Bonus total</button>
+      </div>
+    </form>
+  </div>
+  <table id="results">
+    <!-- Results will be inserted here -->
+  </table>
+  <script>
+    var data; // This will hold the data from the JSON file
+    // Fetch the data from the JSON file
+
+    fetch('cashback.json').then(response => response.json()).then(json => data = json);
+
+    // Get the form element
+    const form = document.querySelector('form');
+
+
+    // Get the "View cashback data" button element
+    const viewRawDataButton = document.getElementById('cashback');
+
+    // Add a listener for the "click" event
+    viewRawDataButton.addEventListener('click', function (event) {
+      // Prevent the default button click behavior
+      event.preventDefault();
+
+      // Sort the data by discount_percentage in descending order
+      data.sort((a, b) => b.discount_percentage.value - a.discount_percentage.value);
+
+      // If DataTables has been initialized, destroy the old instance
+      if ($.fn.dataTable.isDataTable('#results')) {
+        $('#results').DataTable().destroy();
+      }
+
+      // Display the raw data
+      var table = document.getElementById('results');
+      table.innerHTML = '<thead><tr><th>Ofertant</th><th>Tip magazin</th><th>Nume magazin</th><th>Tip discount</th><th>Procent</th><th>Cashback maxim</th><th>Valabilitate</th><th>Extra detalii</th><th>Link magazin</th></tr></thead><tbody>' + data.map(item => '<tr><td>' + item.provider_name + '</td><td>' + item.store_type + '</td><td>' + item.store_name + '</td><td>' + item.dicount_type + '</td><td>' + item.discount_percentage + '</td><td>' + item.discount_max_amount + '</td><td>' + item.valid_until + '</td><td class="extra-info">' + (item.extra_info ? item.extra_info.replace(/\\n/g, '\n') : 'Nimic') + '</td><td>' + (item.store_link ? item.store_link : 'Nimic') + '</td></tr>').join('') + '</tbody>';
+
+      table.style.width = '95vw';
+
+      // Initialize DataTables
+      var dataTable = $('#results').DataTable({
+        dom: 'lrtip', // Exclude 'f'
+        pageLength: 1000000 // Set to a large number
+      });
+
+      // Add a text input to each header cell
+      $('#results thead th').each(function () {
+        var title = $(this).text();
+        $(this).html(title + '<br><input type="text" placeholder="Search " style="width:60%;" />');
+      });
+
+      // Apply the search
+      dataTable.columns().every(function () {
+        var that = this;
+
+        $('input', this.header()).on('keyup change clear', function () {
+          if (that.search() !== this.value) {
+            that
+              .search(this.value)
+              .draw();
+          }
+        });
+      });
+    });
+
+    const voucherButton = document.getElementById('voucher');
+
+     // Add a click event listener to the voucher button
+  voucherButton.addEventListener('click', function (event) {
+  event.preventDefault();
+
+  // Filter the data to only include items with discount_type "voucher"
+  const voucherData = data.filter(item => item.dicount_type === 'voucher');
+
+  // If DataTables has been initialized, destroy the old instance
+  if ($.fn.dataTable.isDataTable('#results')) {
+    $('#results').DataTable().destroy();
+  }
+
+  // Sort the voucher data by discount_percentage in descending order
+  voucherData.sort((a, b) => b.discount_percentage - a.discount_percentage);
+
+  // Create a table element
+  const table = document.getElementById('results');
+
+  // Add a table header row
+  const headerRow = `
+    <thead>
+      <tr>
+        <th>Ofertant</th>
+        <th>Tip magazin</th>
+        <th>Nume magazin</th>
+        <th>Tip discount</th>
+        <th>Procent</th>
+        <th>Cashback maxim</th>
+        <th>Valabilitate</th>
+        <th>Extra detalii</th>
+        <th>Link magazin</th>
+      </tr>
+    </thead>
+  `;
+
+  // Add table rows for each voucher item
+  const rows = voucherData.map(item => `
+    <tr>
+      <td>${item.provider_name}</td>
+      <td>${item.store_type}</td>
+      <td>${item.store_name}</td>
+      <td>${item.dicount_type}</td>
+      <td>${item.discount_percentage}</td>
+      <td>${item.discount_max_amount}</td>
+      <td>${item.valid_until}</td>
+      <td class="extra-info">${item.extra_info ? item.extra_info.replace(/\\n/g, '\n') : 'Nimic'}</td>
+      <td>${item.store_link ? item.store_link : 'Nimic'}</td>
+    </tr>
+  `);
+
+  // Set the table HTML
+  table.innerHTML = headerRow + '<tbody>' + rows.join('') + '</tbody>';
+
+});
+
+
+const viewBestOfferButton = document.getElementById('extrabonus');
+
+viewBestOfferButton.addEventListener('click', function (event) {
+  event.preventDefault();
+
+  // If DataTables has been initialized, destroy the old instance
+  if ($.fn.dataTable.isDataTable('#results')) {
+    $('#results').DataTable().destroy();
+  }
+
+  // Get the cashback and voucher data
+  const cashbackData = data.filter(item => item.dicount_type === 'cashback');
+const voucherData = data.filter(item => item.dicount_type === 'voucher');
+
+// Create a map of store links to their cashback and voucher data
+const storeDataMap = new Map();
+cashbackData.forEach(item => {
+  if (!storeDataMap.has(item.store_link)) {
+    storeDataMap.set(item.store_link, { cashback: [], voucher: [] });
+  }
+  storeDataMap.get(item.store_link).cashback.push(item);
+});
+voucherData.forEach(item => {
+  if (!storeDataMap.has(item.store_link)) {
+    storeDataMap.set(item.store_link, { cashback: [], voucher: [] });
+  }
+  storeDataMap.get(item.store_link).voucher.push(item);
+});
+
+// Calculate the total discount percentage for each store
+const storeDiscounts = [];
+storeDataMap.forEach((storeData, storeLink) => {
+  const cashbackDiscount = storeData.cashback.reduce((max, item) => Math.max(max, item.discount_percentage), 0);
+  const voucherDiscount = storeData.voucher.reduce((max, item) => Math.max(max, item.discount_percentage), 0);
+  const totalDiscount = cashbackDiscount + voucherDiscount;
+  const bestCashbackOffer = storeData.cashback.reduce((best, current) => {
+    if (current.discount_percentage > best.discount_percentage ||
+        (current.discount_percentage === best.discount_percentage && current.discount_max_amount > best.discount_max_amount)) {
+      return current;
+    } else {
+      return best;
+    }
+  }, { discount_percentage: 0, discount_max_amount: 0, provider_name: '' });
+  const bestVoucherOffer = storeData.voucher.reduce((best, current) => {
+    if (current.discount_percentage > best.discount_percentage ||
+        (current.discount_percentage === best.discount_percentage && current.discount_max_amount > best.discount_max_amount)) {
+      return current;
+    } else {
+      return best;
+    }
+  }, { discount_percentage: 0, discount_max_amount: 0, provider_name: '' });
+  const bestOffer = bestCashbackOffer.discount_percentage >= bestVoucherOffer.discount_percentage ? bestCashbackOffer : bestVoucherOffer;
+  storeDiscounts.push({ storeLink, providerName: bestOffer.provider_name, totalDiscount });
+});
+
+// Sort the stores by total discount percentage in descending order
+storeDiscounts.sort((a, b) => b.totalDiscount - a.totalDiscount);
+
+// Display the result
+const table = document.getElementById('results');
+table.innerHTML = `
+  <thead>
+    <tr>
+      <th>Link magazin</th>
+      <th>Ofertant principal</th>
+      <th>Discount total (cashback+voucher)</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${storeDiscounts.map(storeDiscount => `
+      <tr>
+        <td>${storeDiscount.storeLink}</td>
+        <td>${storeDiscount.providerName}</td>
+        <td>${storeDiscount.totalDiscount}%</td>
+      </tr>
+    `).join('')}
+  </tbody>
+`;
+});
+  </script>
+</body>
+
+</html>
